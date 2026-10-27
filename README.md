@@ -124,10 +124,10 @@ pnpm add tailwindcss-animate
 
 ### 4. Environment Setup
 
-Copy the example environment file and configure it:
+Create `.env.local` in the project root and configure it:
 
 ```bash
-cp .env.example .env.local
+touch .env.local
 ```
 
 Edit `.env.local` with your configuration:
@@ -141,16 +141,27 @@ MONGODB_URI=mongodb://localhost:27017/certify
 NEXTAUTH_SECRET=your-super-secret-key-change-in-production
 NEXTAUTH_URL=http://localhost:3000
 
+# Google OAuth (required for sign-in)
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+
 # Resend Email Service
 RESEND_API_KEY=your-resend-api-key
-EMAIL_FROM_ADDRESS=onboarding@resend.dev
+EMAIL_FROM_ADDRESS=your-verified-sender@example.com
 EMAIL_FROM_NAME=Certify
+
+# Mailtrap email delivery for certificates
+MAILTRAP_TOKEN=your-mailtrap-token
 ```
 
 **Generate a secure NEXTAUTH_SECRET:**
 ```bash
 openssl rand -base64 32
 ```
+
+For sign-in, create an OAuth 2.0 Web application in Google Cloud Console. Add
+`http://localhost:3000/api/auth/callback/google` as an authorized redirect URI, then set
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env.local`.
 
 ### 5. Set Up MongoDB
 
@@ -173,11 +184,10 @@ Create the default admin user:
 pnpm seed:admin
 ```
 
-This will create an admin user with:
-- **Email:** `admin@certify.com`
-- **Password:** `admin123`
-
-> ⚠️ **Important:** Change the default password after first login!
+The verified Google account `abhayroyal56@gmail.com` is automatically kept as an admin at sign-in.
+To grant admin access to additional accounts, set `ADMIN_NAME` and `ADMIN_EMAIL` to that Google
+account and run the seed command. Sign in with Google using the matching email address to access
+the admin dashboard.
 
 ### 7. Start the Development Server
 
@@ -186,6 +196,14 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Recipient Accounts
+
+Users create an account or sign in at `/signup` or `/login` with Google. Google must confirm the
+account's email address. New accounts have the regular `user` role and cannot access the admin
+dashboard. Once an organizer adds a participant record and issues a certificate to that same
+Google email address, it appears automatically at `/my-certificates`; users can open or download
+it from there. Public account signup does not grant certificates or admin privileges.
 
 ---
 
@@ -257,7 +275,7 @@ certify/
 
 ### Creating Your First Event
 
-1. Log in with admin credentials
+1. Sign in with Google using the seeded admin email address
 2. Click **"New Event"** on the dashboard or Events page
 3. Fill in event details:
    - Event name
@@ -348,8 +366,8 @@ Jane Smith,jane@example.com
 ## 🔧 API Routes
 
 ### Authentication
-- `POST /api/auth/register` - Register new admin user
 - `POST /api/auth/[...nextauth]` - NextAuth endpoints
+- `GET /api/my-certificates` - List certificates issued to the signed-in email
 
 ### Events
 - `GET /api/events` - List all events
@@ -386,7 +404,6 @@ Jane Smith,jane@example.com
 ```typescript
 {
   email: string (unique, lowercase)
-  password: string (hashed with bcrypt)
   name: string
   role: 'admin' | 'user'
 }
@@ -439,10 +456,11 @@ Jane Smith,jane@example.com
 
 ## 🔒 Security Features
 
-- **Password Hashing:** bcrypt with salt rounds
 - **Session Management:** JWT tokens with NextAuth
 - **Certificate IDs:** SHA-256 checksum validation prevents forgery
-- **Protected Routes:** Server-side authentication on all API routes
+- **Protected Routes:** Admin APIs and dashboard require an admin JWT; recipient accounts can
+  access only their own certificate list
+- **OAuth:** Google sign-ins require a verified email address
 - **Input Validation:** Mongoose schema validation
 - **No PDF Storage:** Certificates generated on-demand, reducing storage risks
 
@@ -459,9 +477,11 @@ Jane Smith,jane@example.com
    - `MONGODB_URI` (MongoDB Atlas recommended)
    - `NEXTAUTH_SECRET` (generate with `openssl rand -base64 32`)
    - `NEXTAUTH_URL` (your production URL)
+   - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (required for sign-in)
    - `RESEND_API_KEY`
    - `EMAIL_FROM_ADDRESS`
    - `EMAIL_FROM_NAME`
+   - `MAILTRAP_TOKEN` (certificate email delivery)
 5. Deploy!
 
 ### Environment Variables for Production
@@ -470,9 +490,12 @@ Jane Smith,jane@example.com
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/certify
 NEXTAUTH_SECRET=<generated-secret>
 NEXTAUTH_URL=https://your-app.vercel.app
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 RESEND_API_KEY=<your-resend-key>
-EMAIL_FROM_ADDRESS=certificates@yourdomain.com
+EMAIL_FROM_ADDRESS=your-verified-sender@example.com
 EMAIL_FROM_NAME=Certify
+MAILTRAP_TOKEN=your-mailtrap-token
 ```
 
 > **Note:** For Resend, you need to verify your domain in the Resend dashboard before sending emails.
@@ -514,11 +537,13 @@ If `RESEND_API_KEY` is not set, emails are logged to the console instead of sent
 | `MONGODB_URI` | Yes | MongoDB connection string | `mongodb://localhost:27017/certify` |
 | `NEXTAUTH_SECRET` | Yes | Secret for JWT token signing | `your-secret-key-change-in-production` |
 | `NEXTAUTH_URL` | Yes | Application URL | `http://localhost:3000` |
+| `GOOGLE_CLIENT_ID` | Yes | Google OAuth client ID | (unset) |
+| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth client secret | (unset) |
 | `RESEND_API_KEY` | No | Resend API key for email | (empty - demo mode) |
 | `EMAIL_FROM_ADDRESS` | No | From address for emails | `onboarding@resend.dev` |
 | `EMAIL_FROM_NAME` | No | From name for emails | `Certify` |
+| `MAILTRAP_TOKEN` | No | Mailtrap API token for certificate email delivery | (unset) |
 | `ADMIN_EMAIL` | No | Seed script admin email | `admin@certify.com` |
-| `ADMIN_PASSWORD` | No | Seed script admin password | `admin123` |
 | `ADMIN_NAME` | No | Seed script admin name | `Admin User` |
 
 ---

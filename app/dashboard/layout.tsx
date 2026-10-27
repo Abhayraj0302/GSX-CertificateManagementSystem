@@ -38,8 +38,10 @@ export default function DashboardLayout({
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login')
+    } else if (status === 'authenticated' && session?.user?.role !== 'admin') {
+      router.push('/my-certificates')
     }
-  }, [status, router])
+  }, [status, session, router])
 
   if (status === 'loading') {
     return (
@@ -50,7 +52,7 @@ export default function DashboardLayout({
     )
   }
 
-  if (!session) {
+  if (!session || session.user?.role !== 'admin') {
     return null
   }
 

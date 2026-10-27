@@ -174,5 +174,6 @@ firestore-debug.log
 # Stripe
 stripe_*
 
-scripts/
+scripts/*
+!scripts/seed-admin.ts
 fonts/
