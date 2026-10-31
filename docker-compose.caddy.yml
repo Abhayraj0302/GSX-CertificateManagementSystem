@@ -1,0 +1,35 @@
+# Docker Compose overlay for running Caddy with automatic SSL
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
+
+services:
+  app:
+    # Expose only internally to Caddy rather than publishing port 3000 to the host
+    ports: !override []
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: certify-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3 support
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - certify-network
+
+volumes:
+  caddy_data:
+    name: certify_caddy_data
+  caddy_config:
+    name: certify_caddy_config

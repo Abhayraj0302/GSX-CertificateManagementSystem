@@ -1,0 +1,60 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: certify:latest
+    container_name: certify-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/certify}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_NAME=${ADMIN_NAME:-Admin}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - MAILTRAP_TOKEN=${MAILTRAP_TOKEN}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-Certify}
+      - AUTO_SEED_ADMIN=${AUTO_SEED_ADMIN:-true}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - certify-network
+
+  mongodb:
+    image: mongo:7
+    container_name: certify-mongodb
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      # Bound to 127.0.0.1 by default so Mongo is not directly exposed on public interfaces
+      - "${MONGO_BIND_PORT:-127.0.0.1:27017}:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - certify-network
+
+volumes:
+  mongodb_data:
+    name: certify_mongodb_data
+
+networks:
+  certify-network:
+    name: certify_network

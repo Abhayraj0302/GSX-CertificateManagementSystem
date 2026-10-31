@@ -86,9 +86,26 @@ A full-stack certificate management web application built with Next.js, TypeScri
 | **QR Codes** | qrcode |
 | **Email** | Resend |
 | **CSV Parsing** | PapaParse |
-| **Deployment** | Vercel (recommended) |
+| **Deployment** | Docker / Self-Hosted (recommended), Vercel |
 
 ---
+
+## 🐳 Self-Hosting with Docker (Recommended)
+
+To self-host Certify on your own server or VPS using Docker Compose:
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+
+# 2. Configure your .env (NEXTAUTH_SECRET, Google OAuth, Cloudinary, ADMIN_EMAIL)
+# Generate a secret: openssl rand -base64 32
+
+# 3. Start application & MongoDB
+docker compose up -d
+```
+
+For complete instructions including automated SSL with Caddy, Nginx reverse proxy, backups, and Google OAuth setup, see **[SELF_HOSTING.md](SELF_HOSTING.md)**.
 
 ## 📋 Prerequisites
 
