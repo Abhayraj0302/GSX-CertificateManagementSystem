@@ -1,28 +1,34 @@
 import 'dotenv/config'
 import mongoose from 'mongoose'
 import connectDB from '../lib/mongodb'
+import { getAdminEmails } from '../lib/admin'
 import { User } from '../models'
 
 async function seedAdmin() {
   const name = process.env.ADMIN_NAME?.trim()
-  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase()
+  const emails = getAdminEmails()
 
-  if (!name || !email) {
-    throw new Error('Set ADMIN_NAME and ADMIN_EMAIL before seeding an admin')
+  if (emails.length === 0) {
+    throw new Error('Set ADMIN_EMAIL to one or more comma-separated email addresses before seeding admins')
   }
 
   await connectDB()
 
-  const admin = await User.findOne({ email })
-  if (admin) {
-    admin.name = name
-    admin.role = 'admin'
-    await admin.save()
-  } else {
-    await User.create({ name, email, role: 'admin' })
-  }
+  for (const email of emails) {
+    const update =
+      emails.length === 1 && name
+        ? {
+            $set: { role: 'admin' as const, name },
+            $setOnInsert: { email },
+          }
+        : {
+            $set: { role: 'admin' as const },
+            $setOnInsert: { email, name: email.split('@')[0] },
+          }
 
-  console.log(`Admin account ready for ${email}`)
+    await User.findOneAndUpdate({ email }, update, { upsert: true, new: true })
+    console.log(`Admin account ready for ${email}`)
+  }
 }
 
 seedAdmin()

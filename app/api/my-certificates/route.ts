@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
+import { isAdminEmail } from '@/lib/admin'
 import connectDB from '@/lib/mongodb'
 import { Certificate, Event, Participant, User } from '@/models'
 
@@ -15,7 +16,7 @@ export async function GET() {
 
     await connectDB()
 
-    if (session?.user?.role !== 'admin') {
+    if (!isAdminEmail(email)) {
       const user = await User.findOne({ email }).select('emailVerifiedAt')
       if (!user?.emailVerifiedAt) {
         return NextResponse.json({ error: 'Verify your email before viewing certificates' }, { status: 403 })

@@ -145,6 +145,9 @@ NEXTAUTH_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=your-google-oauth-client-id
 GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 
+# Comma-separated Google account emails granted admin access
+ADMIN_EMAIL=admin1@example.com,admin2@example.com
+
 # Resend Email Service
 RESEND_API_KEY=your-resend-api-key
 EMAIL_FROM_ADDRESS=your-verified-sender@example.com
@@ -184,10 +187,11 @@ Create the default admin user:
 pnpm seed:admin
 ```
 
-The verified Google account `abhayroyal56@gmail.com` is automatically kept as an admin at sign-in.
-To grant admin access to additional accounts, set `ADMIN_NAME` and `ADMIN_EMAIL` to that Google
-account and run the seed command. Sign in with Google using the matching email address to access
-the admin dashboard.
+Every verified Google account listed in the comma-separated `ADMIN_EMAIL` variable is granted
+the admin role at sign-in. Existing accounts have their role recalculated on each login. To seed
+all configured admins into MongoDB before they sign in, set `ADMIN_EMAIL` and run the seed command.
+For a single newly seeded account, `ADMIN_NAME` optionally sets its display name; with multiple
+addresses, new account names default to the email name.
 
 ### 7. Start the Development Server
 
@@ -200,8 +204,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Recipient Accounts
 
 Users create an account or sign in at `/signup` or `/login` with Google. Google must confirm the
-account's email address. New accounts have the regular `user` role and cannot access the admin
-dashboard. Once an organizer adds a participant record and issues a certificate to that same
+account's email address. Accounts not listed in `ADMIN_EMAIL` have the regular `user` role and
+cannot access the admin dashboard. Once an organizer adds a participant record and issues a
+certificate to that same
 Google email address, it appears automatically at `/my-certificates`; users can open or download
 it from there. Public account signup does not grant certificates or admin privileges.
 
@@ -543,8 +548,8 @@ If `RESEND_API_KEY` is not set, emails are logged to the console instead of sent
 | `EMAIL_FROM_ADDRESS` | No | From address for emails | `onboarding@resend.dev` |
 | `EMAIL_FROM_NAME` | No | From name for emails | `Certify` |
 | `MAILTRAP_TOKEN` | No | Mailtrap API token for certificate email delivery | (unset) |
-| `ADMIN_EMAIL` | No | Seed script admin email | `admin@certify.com` |
-| `ADMIN_NAME` | No | Seed script admin name | `Admin User` |
+| `ADMIN_EMAIL` | No | Comma-separated Google emails granted admin access | (unset) |
+| `ADMIN_NAME` | No | Optional name used when seeding a single admin | `Admin User` |
 
 ---
 

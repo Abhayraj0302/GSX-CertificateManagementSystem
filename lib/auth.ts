@@ -1,11 +1,11 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import connectDB from './mongodb'
+import { isAdminEmail } from './admin'
 import { User } from '@/models'
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
-const primaryAdminEmail = 'abhayroyal56@gmail.com'
 
 if (Boolean(googleClientId) !== Boolean(googleClientSecret)) {
   throw new Error('Both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured')
@@ -34,18 +34,16 @@ export const authOptions: NextAuthOptions = {
       }
 
       await connectDB()
-      const isPrimaryAdmin = email === primaryAdminEmail
       await User.findOneAndUpdate(
         { email },
         {
           $setOnInsert: {
             email,
             name: user.name?.trim() || email.split('@')[0],
-            ...(!isPrimaryAdmin ? { role: 'user' } : {}),
           },
           $set: {
             emailVerifiedAt: new Date(),
-            ...(isPrimaryAdmin ? { role: 'admin' } : {}),
+            role: isAdminEmail(email) ? 'admin' : 'user',
           },
         },
         { upsert: true, new: true }
@@ -57,16 +55,17 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         if (account?.provider === 'google' && user.email) {
           await connectDB()
+          const email = user.email.trim().toLowerCase()
           const databaseUser = await User.findOne({
-            email: user.email.trim().toLowerCase(),
-          }).select('_id role')
+            email,
+          }).select('_id')
 
           if (!databaseUser) {
             throw new Error('Could not load the signed-in account')
           }
 
           token.id = databaseUser._id.toString()
-          token.role = databaseUser.role
+          token.role = isAdminEmail(email) ? 'admin' : 'user'
         } else {
           token.id = user.id
           token.role = user.role
@@ -77,7 +76,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id
-        session.user.role = token.role
+        session.user.role = isAdminEmail(session.user.email) ? 'admin' : 'user'
       }
       return session
     },

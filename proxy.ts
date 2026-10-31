@@ -1,5 +1,6 @@
 import { getToken } from 'next-auth/jwt'
 import { NextRequest, NextResponse } from 'next/server'
+import { isAdminEmail } from '@/lib/admin'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -22,11 +23,11 @@ export async function proxy(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    if (pathname === '/api/my-certificates' && (token.role === 'user' || token.role === 'admin')) {
+    if (pathname === '/api/my-certificates') {
       return NextResponse.next()
     }
 
-    if (token.role !== 'admin') {
+    if (!isAdminEmail(token.email)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -39,7 +40,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (token.role !== 'admin') {
+  if (!isAdminEmail(token.email)) {
     return NextResponse.redirect(new URL('/my-certificates', request.url))
   }
 
