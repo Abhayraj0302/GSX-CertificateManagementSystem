@@ -1,4 +1,9 @@
-import 'dotenv/config'
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('dotenv/config')
+} catch {
+  // In production container environments, environment variables are already set in process.env
+}
 import mongoose from 'mongoose'
 import connectDB from '../lib/mongodb'
 import { getAdminEmails } from '../lib/admin'

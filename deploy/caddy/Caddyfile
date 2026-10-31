@@ -1,0 +1,17 @@
+# Caddy reverse proxy configuration with automatic HTTPS
+# Replace `certificates.yourdomain.com` with your real domain name in `.env` (DOMAIN=...)
+{$DOMAIN:localhost} {
+    encode gzip zstd
+
+    # Maximum request size (50MB) for high-resolution images & CSV uploads
+    request_body {
+        max_size 50MB
+    }
+
+    reverse_proxy app:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
